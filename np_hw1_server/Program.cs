@@ -4,12 +4,11 @@ using System.Text;
 
 namespace np_hw1_server
 {
-
-
     public class ChatServer
     {
         public List<Client> Clients = new List<Client>();
         private TcpListener Listener { get; set; }
+        private Dictionary<string, string> UserInfo = new Dictionary<string, string>() { { "User1", "password1" }, { "User2", "password2" } };
         private int Port { get; set; }
         public ChatServer(int port)
         {
@@ -29,8 +28,6 @@ namespace np_hw1_server
                 client.HandleClientAsync();
             }
         }
-
-
         public void BroadCastMessage(string message, Client client)
         {
             byte[] buffer = Encoding.UTF8.GetBytes(message);
@@ -46,6 +43,11 @@ namespace np_hw1_server
         {
             Clients.Remove(client);
         }
+        public bool AuthUser(string username, string password)
+        {
+            if(UserInfo.TryGetValue(username, out var _password)) return _password == password;
+            return false;
+        }
     }
     public class Client
     {
@@ -58,7 +60,14 @@ namespace np_hw1_server
             byte[] buffer = new byte[1024];
             int bytesRead;
             bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-            Username = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+            string[] userInfo = Encoding.UTF8.GetString(buffer, 0, bytesRead).Split(' ');
+            if(userInfo.Length != 2 || !_Server.AuthUser(userInfo[0], userInfo[1]))
+            {
+                Console.WriteLine("Authentication failed");
+                _Client.Close();
+                return;
+            }
+            Username = userInfo[0];
             Console.WriteLine($"{Username} has joined");
 
             try
@@ -96,6 +105,7 @@ namespace np_hw1_server
                 Console.WriteLine(ex.Message);
             }
         }
+
         private void SendPM(string targetUsername, string message)
         {
             Client targetClient = _Server.Clients.FirstOrDefault(u => u.Username == targetUsername);

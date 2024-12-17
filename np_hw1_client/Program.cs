@@ -8,14 +8,20 @@ namespace ls1_client
         private static TcpClient client { get; set; } = new TcpClient();
         private static NetworkStream stream { get; set; } = null;
         private static string Username { get; set; }
+        private static string Password { get; set; }
         static async Task Main(string[] args)
         {
+            //{ "User1", "password1" } або { "User2", "password2" }
             Console.Write("Enter your username: ");
             Username = Console.ReadLine();
+            Console.Write("Enter your password: ");
+            Password = Console.ReadLine();
             client = new TcpClient("127.0.0.1", 5000);
             stream = client.GetStream();
-            byte[] buffer = Encoding.UTF8.GetBytes(Username);
+            string userInfo = $"{Username} {Password}";
+            byte[] buffer = Encoding.UTF8.GetBytes(userInfo);
             await stream.WriteAsync(buffer, 0, buffer.Length);
+
             Task receiveTask = ReceiveMessageAsync();
             Console.Write("Conected to server. To exit use /quit. For private message use /pm username and you message.\nEnter your message: ");
             while (true)
